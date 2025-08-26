@@ -1,5 +1,15 @@
 package model
 
+import "time"
+
+// User Response
+type UserResponse struct {
+	ID        int       `json:"id,omitempty"`
+	Name      string    `json:"name,omitempty"`
+	Token     string    `json:"token,omitempty"`
+	CreatedAt time.Time `json:"created_at,omitempty"`
+}
+
 // Verify User
 type VerifyUserRequest struct {
 	Token string `validate:"required,max=100"`

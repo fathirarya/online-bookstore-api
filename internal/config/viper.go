@@ -10,7 +10,7 @@ func NewViper() *viper.Viper {
 	config := viper.New()
 
 	// Read from .env file
-	config.SetConfigFile(".env")
+	config.SetConfigFile("../../.env")
 	config.SetConfigType("env")
 
 	// Validate if the config file is found

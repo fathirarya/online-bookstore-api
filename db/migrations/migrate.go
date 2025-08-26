@@ -3,12 +3,13 @@ package migrations
 import (
 	"log"
 
+	"github.com/fathirarya/online-bookstore-api/internal/entity"
 	"gorm.io/gorm"
 )
 
 func Migrate(db *gorm.DB) {
 	err := db.AutoMigrate(
-	// &entity.User{},
+		&entity.User{},
 	// &entity.Category{},
 	// &entity.Book{},
 	// &entity.Order{},

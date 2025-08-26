@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/fathirarya/technical-test-backend/internal/config"
+	"github.com/fathirarya/online-bookstore-api/internal/config"
 )
 
 func main() {
@@ -13,8 +13,8 @@ func main() {
 	app := config.NewFiber(viperConfig)
 
 	config.Bootstrap(&config.BootstrapConfig{
-		DB: db,
-		// App:    *app,
+		DB:     db,
+		App:    app,
 		Config: viperConfig,
 	})
 

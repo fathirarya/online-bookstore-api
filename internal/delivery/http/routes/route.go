@@ -11,6 +11,7 @@ type RouteConfig struct {
 	AuthMiddleware fiber.Handler
 	Category       *handler.CategoryHandler
 	Book           *handler.BookHandler
+	Order          *handler.OrderHandler
 }
 
 func (c *RouteConfig) Setup() {
@@ -42,11 +43,11 @@ func (c *RouteConfig) SetupAuthRoutes() {
 	c.App.Delete("/api/books/:id", c.Book.Delete)
 
 	// Orders
-	// c.App.Post("/api/orders", c.OrderHandler.Create)
-	// c.App.Post("/api/orders/:id/pay", c.OrderHandler.Pay)
-	// c.App.Get("/api/orders", c.OrderHandler.List)
+	c.App.Post("/api/orders", c.Order.Create)
+	c.App.Post("/api/orders/:id/pay", c.Order.Pay)
+	c.App.Get("/api/orders", c.Order.List)
 
-	// // Statistics
+	// Statistics
 	// c.App.Get("/api/books/stats/total", c.StatsHandler.TotalBooks)
 	// c.App.Get("/api/books/stats/price", c.StatsHandler.PriceStats)
 }

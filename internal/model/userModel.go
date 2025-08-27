@@ -16,13 +16,6 @@ type RegisterUserRequest struct {
 	Password string `json:"password" validate:"required,max=255"`
 }
 
-// Update User
-type UpdateUserRequest struct {
-	ID       int    `json:"-" validate:"required"` // INT sesuai entity.User
-	Name     string `json:"name,omitempty" validate:"max=100"`
-	Password string `json:"password,omitempty" validate:"max=255"`
-}
-
 // Login User
 type LoginUserRequest struct {
 	Email    string `json:"email" validate:"required,email,max=100"`
@@ -37,10 +30,5 @@ type AuthResponse struct {
 
 // Logout User
 type LogoutUserRequest struct {
-	ID int `json:"id" validate:"required"`
-}
-
-// Get User
-type GetUserRequest struct {
 	ID int `json:"id" validate:"required"`
 }

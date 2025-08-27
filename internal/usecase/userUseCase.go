@@ -49,12 +49,9 @@ func (uc *UserUseCase) Register(ctx context.Context, req *model.RegisterUserRequ
 	// Cek email sudah terdaftar
 	existingUser, err := uc.UserRepository.FindByEmail(ctx, req.Email)
 	if err != nil && err != gorm.ErrRecordNotFound {
-		tx.Rollback()
-		uc.Log.Error("failed to check existing user: ", err)
 		return nil, fiber.NewError(fiber.StatusInternalServerError, "internal server error")
 	}
 	if existingUser != nil {
-		tx.Rollback()
 		return nil, fiber.NewError(fiber.StatusConflict, "email already registered")
 	}
 
@@ -102,7 +99,7 @@ func (uc *UserUseCase) Login(ctx context.Context, req *model.LoginUserRequest, j
 	if err != nil {
 		tx.Rollback()
 		if err == gorm.ErrRecordNotFound {
-			return nil, fiber.NewError(fiber.StatusUnauthorized, "invalid email or password")
+			return nil, fiber.NewError(fiber.StatusBadRequest, "invalid email or password")
 		}
 		uc.Log.Error("failed to find user: ", err)
 		return nil, fiber.NewError(fiber.StatusInternalServerError, "internal server error")
@@ -110,7 +107,7 @@ func (uc *UserUseCase) Login(ctx context.Context, req *model.LoginUserRequest, j
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
 		tx.Rollback()
-		return nil, fiber.NewError(fiber.StatusUnauthorized, "invalid email or password")
+		return nil, fiber.NewError(fiber.StatusBadRequest, "invalid email or password")
 	}
 
 	token, err := jwtService.GenerateToken(user.ID)

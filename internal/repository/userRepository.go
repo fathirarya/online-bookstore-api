@@ -13,19 +13,16 @@ type UserRepository struct {
 	Log *logrus.Logger
 }
 
-func NewUserRepository(log *logrus.Logger) *UserRepository {
+func NewUserRepository(db *gorm.DB, log *logrus.Logger) *UserRepository {
 	return &UserRepository{
-		Log: log,
+		Repository: Repository[entity.User]{DB: db},
+		Log:        log,
 	}
-}
-
-func (r *UserRepository) FindByToken(db *gorm.DB, user *entity.User, token string) error {
-	return db.Where("token = ?", token).First(user).Error
 }
 
 func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*entity.User, error) {
 	var user entity.User
-	db := r.Repository.DB // pastikan Repository punya field DB *gorm.DB
+	db := r.Repository.DB
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}

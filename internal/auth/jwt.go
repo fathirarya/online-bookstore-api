@@ -4,7 +4,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/fathirarya/online-bookstore-api/internal/config"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -20,11 +19,11 @@ type JWTCustomClaims struct {
 }
 
 // NewJWTService creates a new JWTService
-func NewJWTService(config *config.JWTConfig) *JWTService {
+func NewJWTService(cfg *JWTConfig) *JWTService {
 	return &JWTService{
-		secretKey:      config.SecretKey,
-		issuer:         config.Issuer,
-		expireDuration: config.ExpireDuration,
+		secretKey:      cfg.SecretKey,
+		issuer:         cfg.Issuer,
+		expireDuration: cfg.ExpireDuration,
 	}
 }
 

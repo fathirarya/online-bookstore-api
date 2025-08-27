@@ -30,3 +30,13 @@ type UpdateBookRequest struct {
 	CategoryID  int                   `json:"category_id" validate:"required"`
 	ImageBase64 *multipart.FileHeader `json:"image_base64,omitempty" validate:"omitempty,base64"`
 }
+
+type BookStatsResponse struct {
+	TotalBooks int `json:"total_books"`
+}
+
+type BookPriceStatsResponse struct {
+	MaxPrice float64 `json:"max_price"`
+	MinPrice float64 `json:"min_price"`
+	AvgPrice float64 `json:"avg_price"`
+}

@@ -269,3 +269,43 @@ func (h *BookHandler) Delete(ctx *fiber.Ctx) error {
 		Data: "book deleted successfully",
 	})
 }
+
+func (h *BookHandler) GetTotalBooks(ctx *fiber.Ctx) error {
+	// Panggil UseCase untuk menghitung total buku
+	response, err := h.UseCase.GetTotalBooks(ctx.Context())
+	if err != nil {
+		if fiberErr, ok := err.(*fiber.Error); ok {
+			return ctx.Status(fiberErr.Code).JSON(model.WebResponse[string]{
+				Errors: fiberErr.Message,
+			})
+		}
+		return ctx.Status(fiber.StatusInternalServerError).JSON(model.WebResponse[string]{
+			Errors: "internal server error",
+		})
+	}
+
+	// Return response sukses
+	return ctx.Status(fiber.StatusOK).JSON(model.WebResponse[*model.BookStatsResponse]{
+		Data: response,
+	})
+}
+
+func (h *BookHandler) GetBookPriceStats(ctx *fiber.Ctx) error {
+	// Panggil UseCase untuk mendapatkan statistik harga buku
+	stats, err := h.UseCase.GetBookPriceStats(ctx.Context())
+	if err != nil {
+		if fiberErr, ok := err.(*fiber.Error); ok {
+			return ctx.Status(fiberErr.Code).JSON(model.WebResponse[string]{
+				Errors: fiberErr.Message,
+			})
+		}
+		return ctx.Status(fiber.StatusInternalServerError).JSON(model.WebResponse[string]{
+			Errors: "internal server error",
+		})
+	}
+
+	// Response sukses
+	return ctx.Status(fiber.StatusOK).JSON(model.WebResponse[*model.BookPriceStatsResponse]{
+		Data: stats,
+	})
+}

@@ -5,10 +5,10 @@ import (
 	"github.com/fathirarya/online-bookstore-api/internal/model"
 )
 
-func CategoryToResponse(user *entity.Category) *model.CreateCategoryResponse {
+func CategoryToResponse(category *entity.Category) *model.CreateCategoryResponse {
 	return &model.CreateCategoryResponse{
-		ID:   user.ID,
-		Name: user.Name,
+		ID:   category.ID,
+		Name: category.Name,
 	}
 }
 

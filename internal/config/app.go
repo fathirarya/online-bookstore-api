@@ -34,10 +34,12 @@ func Bootstrap(config *BootstrapConfig) {
 	// setup repositories
 	userRepository := repository.NewUserRepository(config.DB, config.Log)
 	categoryRepository := repository.NewCategoryRepository(config.DB, config.Log)
+	bookRepository := repository.NewBookRepository(config.DB, config.Log)
 
 	// setup usecases
 	userUseCase := usecase.NewUserUseCase(config.DB, config.Log, config.Validate, userRepository)
 	categoryUseCase := usecase.NewCategoryUseCase(config.DB, config.Log, config.Validate, categoryRepository)
+	bookUseCase := usecase.NewBookUseCase(config.DB, config.Log, config.Validate, bookRepository, categoryRepository)
 
 	// setup JWT config & service
 	jwtConfig := LoadJWTConfig()
@@ -46,12 +48,14 @@ func Bootstrap(config *BootstrapConfig) {
 	// setup handlers
 	userHandler := handler.NewUserHandler(userUseCase, config.Log, jwtService)
 	categoryHandler := handler.NewCategoryHandler(categoryUseCase, config.Log)
+	bookHandler := handler.NewBookHandler(bookUseCase, config.Log)
 
 	routeConfig := routes.RouteConfig{
 		App:            config.App,
-		UseHandler:     userHandler,
+		User:           userHandler,
 		AuthMiddleware: middleware.JWTProtected(jwtService),
 		Category:       categoryHandler,
+		Book:           bookHandler,
 	}
 	routeConfig.Setup()
 }

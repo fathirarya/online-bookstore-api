@@ -32,7 +32,7 @@ func NewCategoryUseCase(db *gorm.DB, logger *logrus.Logger, validate *validator.
 
 func (uc *CategoryUseCase) CreateCategory(ctx context.Context, req *model.CreateCategoryRequest) (*model.CreateCategoryResponse, error) {
 	if err := uc.Validate.Struct(req); err != nil {
-		return nil, fiber.NewError(fiber.StatusBadRequest, err.Error())
+		return nil, fiber.NewError(fiber.StatusBadRequest, "validation failed, please check your input")
 	}
 
 	tx := uc.DB.WithContext(ctx).Begin()

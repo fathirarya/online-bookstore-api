@@ -9,11 +9,12 @@ type RouteConfig struct {
 	App            *fiber.App
 	UseHandler     *handler.UserHandler
 	AuthMiddleware fiber.Handler
+	Category       *handler.CategoryHandler
 }
 
 func (c *RouteConfig) Setup() {
 	c.SetupGuestRoutes()
-	// c.SetupAuthRoutes()
+	c.SetupAuthRoutes()
 
 }
 
@@ -26,11 +27,11 @@ func (c *RouteConfig) SetupGuestRoutes() {
 func (c *RouteConfig) SetupAuthRoutes() {
 	c.App.Use(c.AuthMiddleware)
 
-	// // Categories
-	// c.App.Get("/api/categories", c.CategoryHandler.List)
-	// c.App.Post("/api/categories", c.CategoryHandler.Create)
-	// c.App.Put("/api/categories/:id", c.CategoryHandler.Update)
-	// c.App.Delete("/api/categories/:id", c.CategoryHandler.Delete)
+	// Categories
+	c.App.Post("/api/categories", c.Category.Create)
+	c.App.Get("/api/categories", c.Category.List)
+	c.App.Put("/api/categories/:id", c.Category.Update)
+	c.App.Delete("/api/categories/:id", c.Category.Delete)
 
 	// // Books
 	// c.App.Get("/api/books", c.BookHandler.List)

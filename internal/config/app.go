@@ -6,6 +6,7 @@ import (
 	"github.com/fathirarya/online-bookstore-api/db/migrations"
 	"github.com/fathirarya/online-bookstore-api/internal/auth"
 	"github.com/fathirarya/online-bookstore-api/internal/delivery/http/handler"
+	"github.com/fathirarya/online-bookstore-api/internal/delivery/http/middleware"
 	"github.com/fathirarya/online-bookstore-api/internal/delivery/http/routes"
 	"github.com/fathirarya/online-bookstore-api/internal/repository"
 	"github.com/fathirarya/online-bookstore-api/internal/usecase"
@@ -32,9 +33,11 @@ func Bootstrap(config *BootstrapConfig) {
 
 	// setup repositories
 	userRepository := repository.NewUserRepository(config.DB, config.Log)
+	categoryRepository := repository.NewCategoryRepository(config.DB, config.Log)
 
 	// setup usecases
 	userUseCase := usecase.NewUserUseCase(config.DB, config.Log, config.Validate, userRepository)
+	categoryUseCase := usecase.NewCategoryUseCase(config.DB, config.Log, config.Validate, categoryRepository)
 
 	// setup JWT config & service
 	jwtConfig := LoadJWTConfig()
@@ -42,9 +45,13 @@ func Bootstrap(config *BootstrapConfig) {
 
 	// setup handlers
 	userHandler := handler.NewUserHandler(userUseCase, config.Log, jwtService)
+	categoryHandler := handler.NewCategoryHandler(categoryUseCase, config.Log)
+
 	routeConfig := routes.RouteConfig{
-		App:        config.App,
-		UseHandler: userHandler,
+		App:            config.App,
+		UseHandler:     userHandler,
+		AuthMiddleware: middleware.JWTProtected(jwtService),
+		Category:       categoryHandler,
 	}
 	routeConfig.Setup()
 }

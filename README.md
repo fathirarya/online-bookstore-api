@@ -4,7 +4,7 @@ A comprehensive RESTful API for managing an online bookstore built with Go, Fibe
 
 [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=for-the-badge&logo=go)](https://golang.org/)
 [![Fiber](https://img.shields.io/badge/Fiber-v2-00ADD8?style=for-the-badge&logo=go)](https://gofiber.io/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-13+-316192?style=for-the-badge&logo=postgresql)](https://www.postgresql.org/)
+[![MySQL](https://img.shields.io/badge/MySQL-8+-4479A1?style=for-the-badge&logo=mysql)](https://www.mysql.com/)
 [![JWT](https://img.shields.io/badge/JWT-Authentication-000000?style=for-the-badge&logo=JSON%20web%20tokens)](https://jwt.io/)
 
 ## 🚀 Features

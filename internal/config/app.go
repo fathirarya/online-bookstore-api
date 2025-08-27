@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/fathirarya/online-bookstore-api/db/migrations"
+	"github.com/fathirarya/online-bookstore-api/internal/auth"
 	"github.com/fathirarya/online-bookstore-api/internal/delivery/http/handler"
 	"github.com/fathirarya/online-bookstore-api/internal/delivery/http/routes"
 	"github.com/fathirarya/online-bookstore-api/internal/repository"
@@ -30,13 +31,17 @@ func Bootstrap(config *BootstrapConfig) {
 	log.Println("✅ Datbase migration completed")
 
 	// setup repositories
-	userRepository := repository.NewUserRepository(config.Log)
+	userRepository := repository.NewUserRepository(config.DB, config.Log)
 
 	// setup usecases
 	userUseCase := usecase.NewUserUseCase(config.DB, config.Log, config.Validate, userRepository)
 
+	// setup JWT config & service
+	jwtConfig := LoadJWTConfig()
+	jwtService := auth.NewJWTService(jwtConfig)
+
 	// setup handlers
-	userHandler := handler.NewUserHandler(userUseCase, config.Log)
+	userHandler := handler.NewUserHandler(userUseCase, config.Log, jwtService)
 	routeConfig := routes.RouteConfig{
 		App:        config.App,
 		UseHandler: userHandler,

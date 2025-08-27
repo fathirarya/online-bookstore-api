@@ -16,38 +16,35 @@ type RouteConfig struct {
 
 func (c *RouteConfig) Setup() {
 	c.SetupGuestRoutes()
-	c.SetupAuthRoutes()
 
 }
 
 func (c *RouteConfig) SetupGuestRoutes() {
-	// Hanya untuk login & register
-	c.App.Post("/api/register", c.User.Register)
-	c.App.Post("/api/login", c.User.Login)
-}
+	// Login & Register
+	apiV1 := c.App.Group("/api")
+	apiV1.Post("/register", c.User.Register)
+	apiV1.Post("/login", c.User.Login)
 
-func (c *RouteConfig) SetupAuthRoutes() {
-	c.App.Use(c.AuthMiddleware)
-
+	apiV1.Use(c.AuthMiddleware)
 	// Categories
-	c.App.Post("/api/categories", c.Category.Create)
-	c.App.Get("/api/categories", c.Category.List)
-	c.App.Put("/api/categories/:id", c.Category.Update)
-	c.App.Delete("/api/categories/:id", c.Category.Delete)
+	apiV1.Post("/categories", c.Category.Create)
+	apiV1.Get("/categories", c.Category.List)
+	apiV1.Put("/categories/:id", c.Category.Update)
+	apiV1.Delete("/categories/:id", c.Category.Delete)
 
 	// Books
-	c.App.Post("/api/books", c.Book.Create)
-	c.App.Get("/api/books", c.Book.List)
-	c.App.Get("/api/books/:id", c.Book.GetByID)
-	c.App.Put("/api/books/:id", c.Book.Update)
-	c.App.Delete("/api/books/:id", c.Book.Delete)
+	apiV1.Post("/books", c.Book.Create)
+	apiV1.Get("/books", c.Book.List)
+	apiV1.Get("/books/:id", c.Book.GetByID)
+	apiV1.Put("/books/:id", c.Book.Update)
+	apiV1.Delete("/books/:id", c.Book.Delete)
 
 	// Orders
-	c.App.Post("/api/orders", c.Order.Create)
-	c.App.Post("/api/orders/:id/pay", c.Order.Pay)
-	c.App.Get("/api/orders", c.Order.List)
+	apiV1.Post("/orders", c.Order.Create)
+	apiV1.Post("/orders/:id/pay", c.Order.Pay)
+	apiV1.Get("/orders", c.Order.List)
 
 	// Statistics
-	// c.App.Get("/api/books/stats/total", c.StatsHandler.TotalBooks)
-	// c.App.Get("/api/books/stats/price", c.StatsHandler.PriceStats)
+	apiV1.Get("/books/stats/total", c.Book.GetTotalBooks)
+	apiV1.Get("/books/stats/price", c.Book.GetBookPriceStats)
 }

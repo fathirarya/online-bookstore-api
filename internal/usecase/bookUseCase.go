@@ -319,3 +319,58 @@ func (uc *BookUseCase) DeleteBook(ctx context.Context, id int) error {
 
 	return nil
 }
+
+func (uc *BookUseCase) GetTotalBooks(ctx context.Context) (*model.BookStatsResponse, error) {
+	// Mulai transaction (meskipun read-only)
+	tx := uc.DB.WithContext(ctx).Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// Hitung total buku menggunakan repository
+	total, err := uc.BookRepository.CountAllBooks()
+	if err != nil {
+		tx.Rollback()
+		uc.Log.Error("failed to count books: ", err)
+		return nil, fiber.NewError(fiber.StatusInternalServerError, "failed to count books")
+	}
+
+	// Commit transaksi
+	if err := tx.Commit().Error; err != nil {
+		uc.Log.Error("failed to commit transaction: ", err)
+		return nil, fiber.NewError(fiber.StatusInternalServerError, "failed to count books")
+	}
+
+	// Kembalikan response
+	return &model.BookStatsResponse{
+		TotalBooks: int(total),
+	}, nil
+}
+
+func (uc *BookUseCase) GetBookPriceStats(ctx context.Context) (*model.BookPriceStatsResponse, error) {
+	// Mulai transaksi (read-only)
+	tx := uc.DB.WithContext(ctx).Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// Ambil statistik harga dari repository
+	stats, err := uc.BookRepository.GetPriceStats()
+	if err != nil {
+		tx.Rollback()
+		uc.Log.Error("failed to get book price stats: ", err)
+		return nil, fiber.NewError(fiber.StatusInternalServerError, "failed to get book price stats")
+	}
+
+	// Commit transaksi
+	if err := tx.Commit().Error; err != nil {
+		uc.Log.Error("failed to commit transaction: ", err)
+		return nil, fiber.NewError(fiber.StatusInternalServerError, "failed to get book price stats")
+	}
+
+	return stats, nil
+}

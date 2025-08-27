@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/fathirarya/online-bookstore-api/internal/entity"
+	"github.com/fathirarya/online-bookstore-api/internal/model"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -90,4 +91,35 @@ func (r *BookRepository) FindByImage(ctx context.Context, image string) (*entity
 		return nil, err
 	}
 	return &book, nil
+}
+
+func (r *BookRepository) CountAllBooks() (int64, error) {
+	var total int64
+	if err := r.DB.Model(&entity.Book{}).Count(&total).Error; err != nil {
+		r.Log.Error("failed to count books: ", err)
+		return 0, err
+	}
+	return total, nil
+}
+
+func (r *BookRepository) GetPriceStats() (*model.BookPriceStatsResponse, error) {
+	type result struct {
+		Max float64
+		Min float64
+		Avg float64
+	}
+
+	var res result
+	if err := r.DB.Model(&entity.Book{}).
+		Select("MAX(price) as max, MIN(price) as min, AVG(price) as avg").
+		Scan(&res).Error; err != nil {
+		r.Log.Error("failed to get book price stats: ", err)
+		return nil, err
+	}
+
+	return &model.BookPriceStatsResponse{
+		MaxPrice: res.Max,
+		MinPrice: res.Min,
+		AvgPrice: res.Avg,
+	}, nil
 }

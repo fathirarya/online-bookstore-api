@@ -20,6 +20,7 @@ func (c *RouteConfig) Setup() {
 func (c *RouteConfig) SetupGuestRoutes() {
 	// Hanya untuk login & register
 	c.App.Post("/api/register", c.UseHandler.Register)
+	c.App.Post("/api/login", c.UserHandler.Login)
 }
 
 func (c *RouteConfig) SetupAuthRoutes() {

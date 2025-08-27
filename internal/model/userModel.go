@@ -6,13 +6,7 @@ import "time"
 type UserResponse struct {
 	ID        int       `json:"id,omitempty"`
 	Name      string    `json:"name,omitempty"`
-	Token     string    `json:"token,omitempty"`
 	CreatedAt time.Time `json:"created_at,omitempty"`
-}
-
-// Verify User
-type VerifyUserRequest struct {
-	Token string `validate:"required,max=100"`
 }
 
 // Register User
@@ -33,6 +27,12 @@ type UpdateUserRequest struct {
 type LoginUserRequest struct {
 	Email    string `json:"email" validate:"required,email,max=100"`
 	Password string `json:"password" validate:"required,max=255"`
+}
+
+type AuthResponse struct {
+	Token     string       `json:"token"`
+	User      UserResponse `json:"user"`
+	ExpiresAt time.Time    `json:"expires_at"`
 }
 
 // Logout User

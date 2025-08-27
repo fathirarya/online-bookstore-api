@@ -73,7 +73,7 @@ This project follows Clean Architecture principles:
 ## 🛠️ Tech Stack
 
 - **Framework**: [Fiber v2](https://gofiber.io/) - Fast HTTP web framework
-- **Database**: [PostgreSQL](https://www.postgresql.org/) - Relational database
+- **Database**: [MySQL](https://www.mysql.com/) - Relational database
 - **ORM**: [GORM](https://gorm.io/) - Go ORM library
 - **Authentication**: [JWT](https://jwt.io/) - JSON Web Tokens
 - **Validation**: [go-playground/validator](https://github.com/go-playground/validator)
@@ -86,7 +86,7 @@ This project follows Clean Architecture principles:
 ### Prerequisites
 
 - Go 1.21 or higher
-- PostgreSQL 13+
+- MySQL 8+
 - Git
 
 ### Installation

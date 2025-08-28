@@ -38,9 +38,9 @@ func Bootstrap(config *BootstrapConfig) {
 	orderRepository := repository.NewOrderRepository(config.DB, config.Log)
 
 	// setup usecases
-	userUseCase := usecase.NewUserUseCase(config.DB, config.Log, config.Validate, userRepository)
-	categoryUseCase := usecase.NewCategoryUseCase(config.DB, config.Log, config.Validate, categoryRepository)
-	bookUseCase := usecase.NewBookUseCase(config.DB, config.Log, config.Validate, bookRepository, categoryRepository)
+	userUseCase := usecase.NewUserUseCase(config.DB, config.Log, userRepository)
+	categoryUseCase := usecase.NewCategoryUseCase(config.DB, config.Log, categoryRepository)
+	bookUseCase := usecase.NewBookUseCase(config.DB, config.Log, bookRepository, categoryRepository)
 	orderUseCase := usecase.NewOrderUseCase(config.DB, config.Log, config.Validate, orderRepository, bookRepository)
 
 	// setup JWT config & service
@@ -49,8 +49,8 @@ func Bootstrap(config *BootstrapConfig) {
 
 	// setup handlers
 	userHandler := handler.NewUserHandler(userUseCase, config.Log, jwtService, config.Validate)
-	categoryHandler := handler.NewCategoryHandler(categoryUseCase, config.Log)
-	bookHandler := handler.NewBookHandler(bookUseCase, config.Log)
+	categoryHandler := handler.NewCategoryHandler(categoryUseCase, config.Log, config.Validate)
+	bookHandler := handler.NewBookHandler(bookUseCase, config.Log, config.Validate)
 	orderHandler := handler.NewOrderHandler(orderUseCase, config.Log)
 
 	routeConfig := routes.RouteConfig{

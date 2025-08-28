@@ -12,14 +12,14 @@ type CreateBookRequest struct {
 }
 
 type BookResponse struct {
-	ID         int               `json:"id"`
-	Title      string            `json:"title"`
-	Author     string            `json:"author"`
-	Price      float64           `json:"price"`
-	Year       int               `json:"year"`
-	CategoryID int               `json:"category_id"`
-	Category   *CategoryResponse `json:"category,omitempty"`
-	ImageURL   string            `json:"image_url,omitempty"`
+	ID           int     `json:"id"`
+	Title        string  `json:"title"`
+	Author       string  `json:"author"`
+	Price        float64 `json:"price"`
+	Year         int     `json:"year"`
+	CategoryID   int     `json:"category_id"`
+	CategoryName string  `json:"category_name"`
+	ImageURL     string  `json:"image_url"`
 }
 
 type UpdateBookRequest struct {

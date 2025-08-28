@@ -48,7 +48,7 @@ func Bootstrap(config *BootstrapConfig) {
 	jwtService := auth.NewJWTService(jwtConfig)
 
 	// setup handlers
-	userHandler := handler.NewUserHandler(userUseCase, config.Log, jwtService)
+	userHandler := handler.NewUserHandler(userUseCase, config.Log, jwtService, config.Validate)
 	categoryHandler := handler.NewCategoryHandler(categoryUseCase, config.Log)
 	bookHandler := handler.NewBookHandler(bookUseCase, config.Log)
 	orderHandler := handler.NewOrderHandler(orderUseCase, config.Log)

@@ -1,14 +1,12 @@
 package model
 
+// WebResponse is a generic API response wrapper
 type WebResponse[T any] struct {
-	Paging *PageMetadata `json:"paging,omitempty"`
-	Data   T             `json:"data"`
-	Errors string        `json:"errors,omitempty"`
-}
-
-type PageMetadata struct {
-	Page      int   `json:"page"`
-	Size      int   `json:"size"`
-	TotalItem int64 `json:"total_item"`
-	TotalPage int64 `json:"total_page"`
+	Page       int               `json:"page,omitempty"`
+	Size       int               `json:"size,omitempty"`
+	TotalItems int64             `json:"total_items,omitempty"`
+	TotalPages int64             `json:"total_pages,omitempty"`
+	Data       T                 `json:"data,omitempty"`
+	Errors     map[string]string `json:"errors,omitempty"`
+	Message    string            `json:"message,omitempty"`
 }

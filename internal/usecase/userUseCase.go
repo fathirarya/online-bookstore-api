@@ -10,7 +10,6 @@ import (
 	"github.com/fathirarya/online-bookstore-api/internal/model/converter"
 	"github.com/fathirarya/online-bookstore-api/internal/repository"
 	"github.com/fathirarya/online-bookstore-api/internal/utils"
-	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
@@ -20,16 +19,13 @@ import (
 type UserUseCase struct {
 	DB             *gorm.DB
 	Log            *logrus.Logger
-	Validate       *validator.Validate
 	UserRepository *repository.UserRepository
 }
 
-func NewUserUseCase(db *gorm.DB, logger *logrus.Logger, validate *validator.Validate,
-	userRepository *repository.UserRepository) *UserUseCase {
+func NewUserUseCase(db *gorm.DB, logger *logrus.Logger, userRepository *repository.UserRepository) *UserUseCase {
 	return &UserUseCase{
 		DB:             db,
 		Log:            logger,
-		Validate:       validate,
 		UserRepository: userRepository,
 	}
 }

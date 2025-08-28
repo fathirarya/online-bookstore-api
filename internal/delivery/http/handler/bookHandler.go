@@ -1,97 +1,74 @@
 package handler
 
 import (
-	"errors"
 	"mime/multipart"
 	"strconv"
 
 	"github.com/fathirarya/online-bookstore-api/internal/model"
 	"github.com/fathirarya/online-bookstore-api/internal/usecase"
+	"github.com/fathirarya/online-bookstore-api/internal/utils"
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 type BookHandler struct {
-	Log     *logrus.Logger
-	UseCase *usecase.BookUseCase
+	Log      *logrus.Logger
+	UseCase  *usecase.BookUseCase
+	Validate *validator.Validate
 }
 
-func NewBookHandler(useCase *usecase.BookUseCase, logger *logrus.Logger) *BookHandler {
+func NewBookHandler(useCase *usecase.BookUseCase, logger *logrus.Logger, validate *validator.Validate) *BookHandler {
 	return &BookHandler{
-		Log:     logger,
-		UseCase: useCase,
+		Log:      logger,
+		UseCase:  useCase,
+		Validate: validate,
 	}
 }
 
 func (h *BookHandler) Create(ctx *fiber.Ctx) error {
-	// ambil form-data
-	title := ctx.FormValue("title")
-	author := ctx.FormValue("author")
-	priceStr := ctx.FormValue("price")
-	yearStr := ctx.FormValue("year")
-	categoryStr := ctx.FormValue("category_id")
+	// Parse non-file fields
+	var req model.CreateBookRequest
+	req.Title = ctx.FormValue("title")
+	req.Author = ctx.FormValue("author")
+	req.Price, _ = strconv.ParseFloat(ctx.FormValue("price"), 64)
+	req.Year, _ = strconv.Atoi(ctx.FormValue("year"))
+	req.CategoryID, _ = strconv.Atoi(ctx.FormValue("category_id"))
 
-	// validasi input kosong
-	if title == "" || author == "" || priceStr == "" || categoryStr == "" {
+	// Validate input fields
+	if err := h.Validate.Struct(req); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(model.ValidationErrorResponse{
-			Message: "title, author, price, and category_id are required",
+			Message: "validation failed",
+			Errors:  utils.TranslateValidationErrors(err),
 		})
 	}
 
-	// parse angka
-	price, err := strconv.ParseFloat(priceStr, 64)
-	if err != nil || price <= 0 {
-		return ctx.Status(fiber.StatusBadRequest).JSON(model.ValidationErrorResponse{
-			Message: "invalid price value",
-		})
-	}
-
-	year := 0
-	if yearStr != "" {
-		year, err = strconv.Atoi(yearStr)
-		if err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(model.ValidationErrorResponse{
-				Message: "invalid year value",
-			})
-		}
-	}
-
-	categoryID, err := strconv.Atoi(categoryStr)
-	if err != nil || categoryID <= 0 {
-		return ctx.Status(fiber.StatusBadRequest).JSON(model.ValidationErrorResponse{
-			Message: "invalid category_id value",
-		})
-	}
-
-	// ambil file (image)
-	file, err := ctx.FormFile("image")
+	// Handle file upload
+	fileHeader, err := ctx.FormFile("image")
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(model.ValidationErrorResponse{
 			Message: "image file is required",
 		})
 	}
 
-	// open file
-	f, err := file.Open()
+	file, err := fileHeader.Open()
 	if err != nil {
-		return ctx.Status(fiber.StatusBadRequest).JSON(model.ValidationErrorResponse{
+		return ctx.Status(fiber.StatusInternalServerError).JSON(model.ValidationErrorResponse{
 			Message: "failed to open image file",
 		})
 	}
-	defer f.Close()
+	defer file.Close()
 
-	// map ke request struct
-	req := &model.CreateBookRequest{
-		Title:      title,
-		Author:     author,
-		Price:      price,
-		Year:       year,
-		CategoryID: categoryID,
+	// Convert file to base64
+	imageBase64, err := utils.FileToBase64(file)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(model.ValidationErrorResponse{
+			Message: "failed to encode image",
+		})
 	}
 
-	// panggil usecase
-	response, err := h.UseCase.CreateBook(ctx.Context(), req, f)
+	// Call usecase
+	response, err := h.UseCase.CreateBook(ctx.Context(), &req, imageBase64)
 	if err != nil {
 		if fiberErr, ok := err.(*fiber.Error); ok {
 			return ctx.Status(fiberErr.Code).JSON(model.ValidationErrorResponse{
@@ -103,6 +80,7 @@ func (h *BookHandler) Create(ctx *fiber.Ctx) error {
 		})
 	}
 
+	// Success response
 	return ctx.Status(fiber.StatusCreated).JSON(model.WebResponse[*model.BookResponse]{
 		Data: response,
 	})
@@ -112,26 +90,30 @@ func (h *BookHandler) List(ctx *fiber.Ctx) error {
 	page := ctx.QueryInt("page", 1)
 	size := ctx.QueryInt("size", 10)
 
-	books, paging, err := h.UseCase.ListBooks(ctx.Context(), page, size)
+	// Call usecase
+	books, pageNum, pageSize, totalItems, totalPages, err := h.UseCase.ListBooks(ctx.Context(), page, size)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return ctx.Status(fiber.StatusNotFound).JSON(model.ValidationErrorResponse{
-				Message: "books not found",
+		if fiberErr, ok := err.(*fiber.Error); ok {
+			return ctx.Status(fiberErr.Code).JSON(model.WebResponse[any]{
+				Message: fiberErr.Message,
 			})
 		}
-		return ctx.Status(fiber.StatusInternalServerError).JSON(model.ValidationErrorResponse{
+		return ctx.Status(fiber.StatusInternalServerError).JSON(model.WebResponse[any]{
 			Message: "internal server error",
 		})
 	}
 
+	// Success response with paging
 	return ctx.Status(fiber.StatusOK).JSON(model.WebResponse[[]*model.BookResponse]{
-		Paging: paging,
-		Data:   books,
+		Page:       pageNum,
+		Size:       pageSize,
+		TotalItems: totalItems,
+		TotalPages: totalPages,
+		Data:       books,
 	})
 }
 
 func (h *BookHandler) GetByID(ctx *fiber.Ctx) error {
-	// Ambil parameter id dari URL
 	id, err := ctx.ParamsInt("id")
 	if err != nil || id <= 0 {
 		return ctx.Status(fiber.StatusBadRequest).JSON(model.ValidationErrorResponse{
@@ -139,96 +121,7 @@ func (h *BookHandler) GetByID(ctx *fiber.Ctx) error {
 		})
 	}
 
-	// Panggil usecase
 	book, err := h.UseCase.GetBookByID(ctx.Context(), id)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return ctx.Status(fiber.StatusNotFound).JSON(model.ValidationErrorResponse{
-				Message: "book not found",
-			})
-		}
-		return ctx.Status(fiber.StatusInternalServerError).JSON(model.ValidationErrorResponse{
-			Message: "internal server error",
-		})
-	}
-
-	// Return success response
-	return ctx.Status(fiber.StatusOK).JSON(book)
-}
-
-func (h *BookHandler) Update(ctx *fiber.Ctx) error {
-	// ambil param id
-	idStr := ctx.Params("id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil || id <= 0 {
-		return ctx.Status(fiber.StatusBadRequest).JSON(model.ValidationErrorResponse{
-			Message: "invalid book id",
-		})
-	}
-
-	// ambil form-data
-	title := ctx.FormValue("title")
-	author := ctx.FormValue("author")
-	priceStr := ctx.FormValue("price")
-	yearStr := ctx.FormValue("year")
-	categoryStr := ctx.FormValue("category_id")
-
-	// parsing number fields (optional)
-	var price float64
-	if priceStr != "" {
-		price, err = strconv.ParseFloat(priceStr, 64)
-		if err != nil || price <= 0 {
-			return ctx.Status(fiber.StatusBadRequest).JSON(model.ValidationErrorResponse{
-				Message: "invalid price value",
-			})
-		}
-	}
-
-	var year int
-	if yearStr != "" {
-		year, err = strconv.Atoi(yearStr)
-		if err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(model.ValidationErrorResponse{
-				Message: "invalid year value",
-			})
-		}
-	}
-
-	var categoryID int
-	if categoryStr != "" {
-		categoryID, err = strconv.Atoi(categoryStr)
-		if err != nil || categoryID <= 0 {
-			return ctx.Status(fiber.StatusBadRequest).JSON(model.ValidationErrorResponse{
-				Message: "invalid category_id value",
-			})
-		}
-	}
-
-	// ambil file image (optional)
-	var file multipart.File
-	fileHeader, err := ctx.FormFile("image")
-	if err == nil {
-		f, err := fileHeader.Open()
-		if err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(model.ValidationErrorResponse{
-				Message: "failed to open image file",
-			})
-		}
-		defer f.Close()
-		file = f
-	}
-
-	// map ke request struct
-	req := &model.UpdateBookRequest{
-		Title:      title,
-		Author:     author,
-		Price:      price,
-		Year:       year,
-		CategoryID: categoryID,
-	}
-
-	// panggil usecase
-	response, err := h.UseCase.UpdateBook(ctx.Context(), id, req, file)
 	if err != nil {
 		if fiberErr, ok := err.(*fiber.Error); ok {
 			return ctx.Status(fiberErr.Code).JSON(model.ValidationErrorResponse{
@@ -241,71 +134,155 @@ func (h *BookHandler) Update(ctx *fiber.Ctx) error {
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(model.WebResponse[*model.BookResponse]{
+		Data:    book,
+		Message: "success get book detail",
+	})
+}
+
+func (h *BookHandler) Update(ctx *fiber.Ctx) error {
+	//  Parse ID dari param
+	id, err := ctx.ParamsInt("id")
+	if err != nil || id <= 0 {
+		return ctx.Status(fiber.StatusBadRequest).JSON(model.WebResponse[any]{
+			Message: "invalid book id",
+		})
+	}
+
+	// Parse form-data ke struct
+	var req model.UpdateBookRequest
+	req.Title = ctx.FormValue("title")
+	req.Author = ctx.FormValue("author")
+
+	// parse optional price
+	if priceStr := ctx.FormValue("price"); priceStr != "" {
+		price, err := strconv.ParseFloat(priceStr, 64)
+		if err != nil || price <= 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(model.WebResponse[any]{
+				Message: "invalid price value",
+			})
+		}
+		req.Price = price
+	}
+
+	// parse optional year
+	if yearStr := ctx.FormValue("year"); yearStr != "" {
+		year, err := strconv.Atoi(yearStr)
+		if err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(model.WebResponse[any]{
+				Message: "invalid year value",
+			})
+		}
+		req.Year = year
+	}
+
+	// parse optional category
+	if categoryStr := ctx.FormValue("category_id"); categoryStr != "" {
+		categoryID, err := strconv.Atoi(categoryStr)
+		if err != nil || categoryID <= 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(model.WebResponse[any]{
+				Message: "invalid category_id value",
+			})
+		}
+		req.CategoryID = categoryID
+	}
+
+	// Ambil file image (optional)
+	var file multipart.File
+	if fileHeader, err := ctx.FormFile("image"); err == nil {
+		f, err := fileHeader.Open()
+		if err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(model.WebResponse[any]{
+				Message: "failed to open image file",
+			})
+		}
+		defer f.Close()
+		file = f
+	}
+
+	//  Panggil usecase
+	response, err := h.UseCase.UpdateBook(ctx.Context(), id, &req, file)
+	if err != nil {
+		if fiberErr, ok := err.(*fiber.Error); ok {
+			return ctx.Status(fiberErr.Code).JSON(model.WebResponse[any]{
+				Message: fiberErr.Message,
+			})
+		}
+		return ctx.Status(fiber.StatusInternalServerError).JSON(model.WebResponse[any]{
+			Message: "internal server error",
+		})
+	}
+
+	//  Success response
+	return ctx.Status(fiber.StatusOK).JSON(model.WebResponse[*model.BookResponse]{
 		Data: response,
 	})
 }
 
 func (h *BookHandler) Delete(ctx *fiber.Ctx) error {
+	//  Parse ID dari path param
 	id, err := ctx.ParamsInt("id")
-	if err != nil || id < 1 {
-		return ctx.Status(fiber.StatusBadRequest).JSON(model.WebResponse[string]{
-			Errors: "invalid book id",
+	if err != nil || id <= 0 {
+		return ctx.Status(fiber.StatusBadRequest).JSON(model.WebResponse[any]{
+			Message: "invalid book id",
 		})
 	}
 
+	//  Panggil usecase untuk delete
 	if err := h.UseCase.DeleteBook(ctx.Context(), id); err != nil {
 		if fiberErr, ok := err.(*fiber.Error); ok {
-			return ctx.Status(fiberErr.Code).JSON(model.WebResponse[string]{
-				Errors: fiberErr.Message,
+			return ctx.Status(fiberErr.Code).JSON(model.WebResponse[any]{
+				Message: fiberErr.Message,
 			})
 		}
-		return ctx.Status(fiber.StatusInternalServerError).JSON(model.WebResponse[string]{
-			Errors: "internal server error",
+		return ctx.Status(fiber.StatusInternalServerError).JSON(model.WebResponse[any]{
+			Message: "internal server error",
 		})
 	}
 
-	// Return response konfirmasi delete berhasil
-	return ctx.Status(fiber.StatusOK).JSON(model.WebResponse[string]{
-		Data: "book deleted successfully",
+	//  Response sukses
+	return ctx.Status(fiber.StatusOK).JSON(model.WebResponse[any]{
+		Message: "book deleted successfully",
 	})
 }
 
 func (h *BookHandler) GetTotalBooks(ctx *fiber.Ctx) error {
-	// Panggil UseCase untuk menghitung total buku
+	// 1️⃣ Panggil UseCase
 	response, err := h.UseCase.GetTotalBooks(ctx.Context())
 	if err != nil {
 		if fiberErr, ok := err.(*fiber.Error); ok {
-			return ctx.Status(fiberErr.Code).JSON(model.WebResponse[string]{
-				Errors: fiberErr.Message,
+			return ctx.Status(fiberErr.Code).JSON(model.WebResponse[any]{
+				Message: fiberErr.Message,
 			})
 		}
-		return ctx.Status(fiber.StatusInternalServerError).JSON(model.WebResponse[string]{
-			Errors: "internal server error",
+		return ctx.Status(fiber.StatusInternalServerError).JSON(model.WebResponse[any]{
+			Message: "internal server error",
 		})
 	}
 
-	// Return response sukses
+	// 2️⃣ Response sukses
 	return ctx.Status(fiber.StatusOK).JSON(model.WebResponse[*model.BookStatsResponse]{
-		Data: response,
+		Data:    response,
+		Message: "success get total books",
 	})
 }
 
 func (h *BookHandler) GetBookPriceStats(ctx *fiber.Ctx) error {
-	// Panggil UseCase untuk mendapatkan statistik harga buku
+	//  Panggil UseCase
 	stats, err := h.UseCase.GetBookPriceStats(ctx.Context())
 	if err != nil {
 		if fiberErr, ok := err.(*fiber.Error); ok {
-			return ctx.Status(fiberErr.Code).JSON(model.WebResponse[string]{
-				Errors: fiberErr.Message,
+			return ctx.Status(fiberErr.Code).JSON(model.WebResponse[any]{
+				Message: fiberErr.Message,
 			})
 		}
-		return ctx.Status(fiber.StatusInternalServerError).JSON(model.WebResponse[string]{
-			Errors: "internal server error",
+		return ctx.Status(fiber.StatusInternalServerError).JSON(model.WebResponse[any]{
+			Message: "internal server error",
 		})
 	}
 
-	// Response sukses
+	//  Response sukses
 	return ctx.Status(fiber.StatusOK).JSON(model.WebResponse[*model.BookPriceStatsResponse]{
-		Data: stats,
+		Data:    stats,
+		Message: "success get book price stats",
 	})
 }

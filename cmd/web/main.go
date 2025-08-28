@@ -2,6 +2,10 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/fathirarya/online-bookstore-api/internal/config"
 )
@@ -22,8 +26,18 @@ func main() {
 	})
 
 	webPort := viperConfig.GetInt("WEB_PORT")
-	err := app.Listen(fmt.Sprintf(":%d", webPort))
-	if err != nil {
-		log.Fatalf("Failed to start server: %v", err)
-	}
+
+	go func() {
+		if err := app.Listen(fmt.Sprintf(":%d", webPort)); err != nil {
+			log.Fatalf("Failed to start server: %v", err)
+		}
+	}()
+
+	// signal handling di sini
+	sigTerm := make(chan os.Signal, 1)
+	signal.Notify(sigTerm, os.Interrupt, syscall.SIGTERM)
+	<-sigTerm
+
+	slog.Info("Shutting down gracefully...")
+	_ = app.Shutdown()
 }

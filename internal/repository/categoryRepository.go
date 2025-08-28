@@ -9,20 +9,20 @@ import (
 )
 
 type CategoryRepository struct {
-	Repository[entity.Category]
+	CommonQuery[entity.Category]
 	Log *logrus.Logger
 }
 
 func NewCategoryRepository(db *gorm.DB, log *logrus.Logger) *CategoryRepository {
 	return &CategoryRepository{
-		Repository: Repository[entity.Category]{DB: db},
-		Log:        log,
+		CommonQuery: CommonQuery[entity.Category]{DB: db},
+		Log:         log,
 	}
 }
 
 func (r *CategoryRepository) FindByName(ctx context.Context, name string) (*entity.Category, error) {
 	var category entity.Category
-	db := r.Repository.DB
+	db := r.CommonQuery.DB
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}

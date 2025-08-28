@@ -9,20 +9,20 @@ import (
 )
 
 type UserRepository struct {
-	Repository[entity.User]
+	CommonQuery[entity.User]
 	Log *logrus.Logger
 }
 
 func NewUserRepository(db *gorm.DB, log *logrus.Logger) *UserRepository {
 	return &UserRepository{
-		Repository: Repository[entity.User]{DB: db},
-		Log:        log,
+		CommonQuery: CommonQuery[entity.User]{DB: db},
+		Log:         log,
 	}
 }
 
 func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*entity.User, error) {
 	var user entity.User
-	db := r.Repository.DB
+	db := r.CommonQuery.DB
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}

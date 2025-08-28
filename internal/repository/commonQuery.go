@@ -7,27 +7,27 @@ import (
 	"gorm.io/gorm"
 )
 
-type Repository[T any] struct {
+type CommonQuery[T any] struct {
 	DB *gorm.DB
 }
 
-func (r *Repository[T]) Create(db *gorm.DB, entity *T) error {
+func (r *CommonQuery[T]) Create(db *gorm.DB, entity *T) error {
 	return db.Create(entity).Error
 }
 
-func (r *Repository[T]) Update(db *gorm.DB, entity *T) error {
+func (r *CommonQuery[T]) Update(db *gorm.DB, entity *T) error {
 	return db.Save(entity).Error
 }
 
-func (r *Repository[T]) Delete(db *gorm.DB, entity *T) error {
+func (r *CommonQuery[T]) Delete(db *gorm.DB, entity *T) error {
 	return db.Delete(entity).Error
 }
 
-func (r *Repository[T]) FindById(db *gorm.DB, entity *T, id any) error {
+func (r *CommonQuery[T]) FindById(db *gorm.DB, entity *T, id any) error {
 	return db.Where("id = ?", id).Take(entity).Error
 }
 
-func (r *Repository[T]) Paginate(ctx context.Context, db *gorm.DB, page, size int, entities *[]T) (total int64, err error) {
+func (r *CommonQuery[T]) Paginate(ctx context.Context, db *gorm.DB, page, size int, entities *[]T) (total int64, err error) {
 	// Validasi page & size
 	if page < 1 {
 		page = 1

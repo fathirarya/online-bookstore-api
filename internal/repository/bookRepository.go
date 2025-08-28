@@ -10,14 +10,14 @@ import (
 )
 
 type BookRepository struct {
-	Repository[entity.Book]
+	CommonQuery[entity.Book]
 	Log *logrus.Logger
 }
 
 func NewBookRepository(db *gorm.DB, log *logrus.Logger) *BookRepository {
 	return &BookRepository{
-		Repository: Repository[entity.Book]{DB: db},
-		Log:        log,
+		CommonQuery: CommonQuery[entity.Book]{DB: db},
+		Log:         log,
 	}
 }
 
@@ -31,7 +31,7 @@ func (r *BookRepository) FindByID(ctx context.Context, db *gorm.DB, id int) (*en
 
 func (r *BookRepository) FindByTitle(ctx context.Context, title string) (*entity.Book, error) {
 	var book entity.Book
-	db := r.Repository.DB
+	db := r.CommonQuery.DB
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -43,7 +43,7 @@ func (r *BookRepository) FindByTitle(ctx context.Context, title string) (*entity
 
 func (r *BookRepository) FindByCategoryID(ctx context.Context, categoryID int) (*entity.Book, error) {
 	var book entity.Book
-	db := r.Repository.DB
+	db := r.CommonQuery.DB
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}

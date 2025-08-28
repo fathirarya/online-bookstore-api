@@ -1,7 +1,11 @@
 package config
 
 import (
+	"context"
 	"log"
+	"log/slog"
+	"os"
+	"time"
 
 	"github.com/fathirarya/online-bookstore-api/db/migrations"
 	"github.com/fathirarya/online-bookstore-api/internal/auth"
@@ -12,6 +16,7 @@ import (
 	"github.com/fathirarya/online-bookstore-api/internal/usecase"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gorm.io/gorm"
@@ -26,10 +31,9 @@ type BootstrapConfig struct {
 }
 
 func Bootstrap(config *BootstrapConfig) {
-
 	// Run AutoMigrate
 	migrations.Migrate(config.DB)
-	log.Println("✅ Datbase migration completed")
+	log.Println("✅ Database migration completed")
 
 	// setup repositories
 	userRepository := repository.NewUserRepository(config.DB, config.Log)
@@ -53,6 +57,7 @@ func Bootstrap(config *BootstrapConfig) {
 	bookHandler := handler.NewBookHandler(bookUseCase, config.Log, config.Validate)
 	orderHandler := handler.NewOrderHandler(orderUseCase, config.Log)
 
+	// setup routes
 	routeConfig := routes.RouteConfig{
 		App:            config.App,
 		User:           userHandler,
@@ -62,4 +67,16 @@ func Bootstrap(config *BootstrapConfig) {
 		Order:          orderHandler,
 	}
 	routeConfig.Setup()
+
+	// setup cron job
+	ctx := context.Background()
+	scheduler := cron.New(cron.WithLocation(time.Local))
+	orderCronjob := usecase.NewOrderCronJob(config.DB, config.Log, orderRepository)
+	_, err := scheduler.AddFunc("*/2 * * * *", func() { orderCronjob.CheckingOrderPaymentStatus(ctx) })
+	if err != nil {
+		slog.Error("Failed to add cron job", "error", err.Error())
+		os.Exit(1)
+	}
+	go scheduler.Start()
+	slog.Info("Cron job started")
 }

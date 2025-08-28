@@ -1,20 +1,23 @@
 package repository
 
 import (
+	"time"
+
 	"github.com/fathirarya/online-bookstore-api/internal/entity"
+	"github.com/fathirarya/online-bookstore-api/internal/enum"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
 type OrderRepository struct {
-	Repository[entity.Order]
+	CommonQuery[entity.Order]
 	Log *logrus.Logger
 }
 
 func NewOrderRepository(db *gorm.DB, log *logrus.Logger) *OrderRepository {
 	return &OrderRepository{
-		Repository: Repository[entity.Order]{DB: db},
-		Log:        log,
+		CommonQuery: CommonQuery[entity.Order]{DB: db},
+		Log:         log,
 	}
 }
 
@@ -46,6 +49,23 @@ func (r *OrderRepository) FindByUserID(tx *gorm.DB, userID int) ([]entity.Order,
 
 func (r *OrderRepository) UpdateStatus(tx *gorm.DB, orderID int, status string) error {
 	result := tx.Model(&entity.Order{}).Where("id = ?", orderID).Update("status", status)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
+func (r *OrderRepository) CancelExpiredOrders(tx *gorm.DB) error {
+	cutoff := time.Now().Add(-15 * time.Minute) // waktu 15 menit lalu
+
+	result := tx.Model(&entity.Order{}).
+		Where("status = ?", enum.Pending).
+		Where("created_at <= ?", cutoff).
+		Update("status", enum.Cancelled)
+
 	if result.Error != nil {
 		return result.Error
 	}
